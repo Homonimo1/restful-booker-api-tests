@@ -7,6 +7,13 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: newman-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   newman:
     timeout-minutes: 15
@@ -19,10 +26,15 @@ jobs:
           node-version: lts/*
 
       - name: Install Newman
-        run: npm install -g newman
+        run: npm install --global newman@6
 
       - name: Run Postman collection
-        run: newman run collection.json -e environment.json --reporters cli,json --reporter-json-export newman-report.json
+        run: >
+          newman run collection.json
+          -e environment.json
+          --reporters cli,json
+          --reporter-json-export newman-report.json
+          --timeout-request 10000
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}

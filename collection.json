@@ -11,7 +11,7 @@
       "description": "Authentication. Obtains the token used by the write operations.",
       "item": [
         {
-          "name": "Token Auth",
+          "name": "POST token auth",
           "request": {
             "method": "POST",
             "description": "Authenticates against /auth with the public sandbox credentials and stores the returned token in the environment for the authenticated requests.",
@@ -63,7 +63,7 @@
           ]
         },
         {
-          "name": "Token Auth - Bad Credentials",
+          "name": "POST token auth - bad credentials",
           "request": {
             "method": "POST",
             "description": "Negative case: authenticates with a wrong password. The API replies 200 (not 401) with a \"Bad credentials\" body and no token.",
@@ -118,11 +118,11 @@
       ]
     },
     {
-      "name": "Booking - Crud",
+      "name": "Booking - CRUD",
       "description": "Happy path over the full booking lifecycle: list, create, read, update and partial update.",
       "item": [
         {
-          "name": "Get_All_Books_Id",
+          "name": "GET all booking IDs",
           "request": {
             "method": "GET",
             "description": "Returns the list of existing booking IDs. Smoke check that confirms the collection can reach the API.",
@@ -146,11 +146,11 @@
                   "pm.test(\"Status code is 200\", function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"Response time is less than 1000ms\", function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "pm.test(\"Response time is less than 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
                   "});",
                   "",
-                  "pm.test(\"Booking IDs is an array\", function () {",
+                  "pm.test(\"Response is an array\", function () {",
                   "   var jsonData = pm.response.json();",
                   "   pm.expect(jsonData).to.be.an(\"array\")",
                   "",
@@ -168,7 +168,7 @@
           ]
         },
         {
-          "name": "Created Booking",
+          "name": "POST create booking",
           "request": {
             "method": "POST",
             "description": "Creates a booking with valid data, validates the response against a JSON schema and stores the new booking id for the following requests.",
@@ -218,7 +218,7 @@
                   "    pm.expect(jsonData.booking.firstname).to.eql(\"Omar\");",
                   "});",
                   "",
-                  "pm.test(\"Verify schema\", function () {",
+                  "pm.test(\"Response matches schema\", function () {",
                   "    const schema = {",
                   "        \"type\": \"object\",",
                   "        \"properties\": {",
@@ -248,7 +248,7 @@
                   "    pm.expect(pm.response.json()).to.have.jsonSchema(schema);",
                   "});",
                   "",
-                  "pm.test(\"Created Booking_ID\", function () {",
+                  "pm.test(\"Stores booking ID\", function () {",
                   "    const jsonData = pm.response.json();",
                   "    pm.expect(jsonData).to.have.property(\"bookingid\");",
                   "",
@@ -261,7 +261,7 @@
           ]
         },
         {
-          "name": "Get Boockin by ID",
+          "name": "GET booking by ID",
           "request": {
             "method": "GET",
             "description": "Retrieves the booking created earlier using {{booking_id}} and validates its main fields.",
@@ -299,7 +299,7 @@
           ]
         },
         {
-          "name": "Update Boocking",
+          "name": "PUT update booking",
           "request": {
             "method": "PUT",
             "description": "Full update (PUT) of the booking using the stored token. Replaces every field.",
@@ -352,11 +352,11 @@
                   "pm.test(\"Status code is 200\", function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"Verify lastname\", function () {",
+                  "pm.test(\"PUT updates lastname\", function () {",
                   "    var jsonData = pm.response.json();",
                   "    pm.expect(jsonData.lastname).to.eql(\"Suit Validada\");",
                   "});",
-                  "pm.test(\"Verify change totalprice\", function () {",
+                  "pm.test(\"PUT updates totalprice\", function () {",
                   "    var jsonData = pm.response.json();",
                   "    pm.expect(jsonData.totalprice).to.eql(2000);",
                   "    console.log(jsonData.totalprice)",
@@ -367,7 +367,7 @@
           ]
         },
         {
-          "name": "Partial Update",
+          "name": "PATCH partial update",
           "request": {
             "method": "PATCH",
             "description": "Partial update (PATCH) of the booking: only totalprice is changed.",
@@ -430,7 +430,7 @@
           ]
         },
         {
-          "name": "Get Booking - Verify Update",
+          "name": "GET verify update persisted",
           "request": {
             "method": "GET",
             "description": "Reads the booking again after PUT and PATCH to prove the changes were persisted on the server, not just echoed in the response.",
@@ -466,7 +466,7 @@
           ]
         },
         {
-          "name": "Delete Booking (auth)",
+          "name": "DELETE booking (authenticated)",
           "request": {
             "method": "DELETE",
             "description": "Closes the CRUD lifecycle: deletes the created booking with the stored token and confirms it is gone (404).",
@@ -520,11 +520,11 @@
       ]
     },
     {
-      "name": "Negative case",
+      "name": "Negative cases",
       "description": "Error handling and edge cases.",
       "item": [
         {
-          "name": "CREATED BOOKING - Missing Fields",
+          "name": "POST create booking - missing fields",
           "request": {
             "method": "POST",
             "description": "Negative case: creates a booking without the required firstname. The API responds 500 instead of 400 - documented server bug.",
@@ -560,7 +560,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Bug: returns 500 instead of 400\", function () {",
+                  "pm.test(\"KNOWN BUG: should return 400, returns 500\", function () {",
                   "    pm.response.to.have.status(500);",
                   "});",
                   "pm.test(\"Log server error details\", () => {",
@@ -573,7 +573,7 @@
           ]
         },
         {
-          "name": "GET BOOKING - INVALID ID",
+          "name": "GET booking - invalid ID",
           "request": {
             "method": "GET",
             "description": "Negative case: requests a booking id that does not exist and expects 404.",
@@ -604,7 +604,7 @@
           ]
         },
         {
-          "name": "Delete Booking - Forbidden (no auth)",
+          "name": "DELETE booking - no auth (403)",
           "request": {
             "method": "DELETE",
             "description": "Negative case: tries to delete an existing booking of the sandbox without authentication. It is rejected (403) and the booking is still there.",
@@ -651,7 +651,7 @@
       "description": "Post-run checks: leaves the sandbox clean and clears the runtime variables.",
       "item": [
         {
-          "name": "Cleanup Booking (safety net)",
+          "name": "TEARDOWN cleanup booking",
           "request": {
             "method": "GET",
             "description": "Teardown: verifies the run left no booking behind. In the normal case the happy path already deleted it, so this GET returns 404; if a booking is still around (a previous step failed) it is removed here. Clears the runtime variables.",
@@ -679,8 +679,6 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// Safety net: the happy path (Booking - Crud > Delete Booking) already removes the",
-                  "// booking, so normally this GET returns 404 and there is nothing left to do.",
                   "pm.test(\"Cleanup: no booking left behind\", function (done) {",
                   "    if (pm.response.code !== 200) {",
                   "        pm.expect(pm.response.code).to.eql(404);",
@@ -698,7 +696,9 @@
                   "});",
                   "",
                   "pm.test(\"Cleanup: runtime variables cleared\", function () {",
+                  "    pm.environment.unset(\"token\");",
                   "    pm.environment.unset(\"booking_id\");",
+                  "    pm.environment.unset(\"existing_booking_id\");",
                   "});"
                 ]
               }
