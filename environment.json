@@ -1,0 +1,30 @@
+{
+  "id": "847ce89b-3907-4dfa-b17d-557ff5272cb6",
+  "name": "Restful Booker - QA",
+  "values": [
+    {
+      "key": "Url",
+      "value": "https://restful-booker.herokuapp.com",
+      "enabled": true,
+      "type": "default",
+      "description": "Base URL of the public sandbox."
+    },
+    {
+      "key": "token",
+      "value": "",
+      "enabled": true,
+      "type": "secret",
+      "description": "Filled automatically by the Token Auth request."
+    },
+    {
+      "key": "booking_id",
+      "value": "",
+      "enabled": true,
+      "type": "default",
+      "description": "Filled automatically by the Created Booking request."
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-10-18T00:00:00.000Z",
+  "_postman_exported_using": "Postman MCP export"
+}
