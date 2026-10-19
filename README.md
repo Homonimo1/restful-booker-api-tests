@@ -12,10 +12,10 @@ It covers authentication, the full booking CRUD lifecycle and negative cases.
 | Metric | Value |
 | --- | --- |
 | Date | 2026-10-19 |
-| Requests | 15 |
-| Assertions | 31 |
+| Requests | 20 |
+| Assertions | 38 |
 | Failures | 0 |
-| Duration | 3.2 s |
+| Duration | 4.2 s |
 
 ## Files
 
@@ -43,9 +43,12 @@ It covers authentication, the full booking CRUD lifecycle and negative cases.
 | | `PATCH partial update` | Partial update (PATCH): changes only `totalprice`. |
 | | `GET verify update persisted` | Reads the booking again to prove the PUT/PATCH changes were **persisted on the server**, not just echoed in the response. |
 | | `DELETE booking (authenticated)` | Closes the CRUD cycle: deletes the created booking and confirms it is gone (`404`). |
+| **Filters** | `GET bookings by firstname` | Filters by `firstname`; an unknown name returns an empty array. |
 | **Negative cases** | `POST create booking - missing fields` | Documents a server bug: returns `500` instead of `400`. |
 | | `GET booking - invalid ID` | A non-existent ID returns `404`. |
 | | `DELETE booking - no auth (403)` | Without a token the delete is rejected (`403`) and the booking is still there. Targets `existing_booking_id`, so it does not depend on the happy path. |
+| | `PUT booking - invalid token (403)` | A tampered token is rejected (`403`) and the existing booking is still there. |
+| | `PUT booking - non-existent ID (405)` | Documents the observed behavior: the API returns `405` instead of the expected `404`. |
 | **Teardown** | `TEARDOWN cleanup booking` | Verifies the run left **no booking behind** (`404`). If a booking is still around (an earlier step failed) it is removed here. Clears the runtime variables. |
 
 ## Environment variables
@@ -91,26 +94,20 @@ version 6 and the JSON report is uploaded as a build artifact named `newman-repo
   (`Booking - CRUD`) ends with the delete, so the folder really covers CRUD end to end.
 - Persistence check: after PUT/PATCH the booking is read again to confirm the changes were stored server-side.
 - Response schema validation for the created booking.
-- Negative cases: missing required fields, unknown ID, delete without authentication.
+- Query filter by `firstname` (known name and unknown name).
+- Negative cases: missing required fields, unknown ID, delete without authentication, tampered token and PUT on a non-existent ID.
 - Response body assertions on the returned data (not only status codes).
 - The negative delete targets an existing booking instead of the created one, so the negative folder does not
   depend on the happy path and the suite stays valid if requests are reordered.
-
-## What I'd test next
-
-- **Filters:** `GET /booking?firstname=`, `?lastname=`, `?checkin=`, `?checkout=`.
-- **Invalid or tampered token** on PUT/PATCH/DELETE → `403`.
-- **PUT/PATCH on a non-existent booking** → `404`.
-- **Invalid field types** (for example, `totalprice` as a string).
-- **Content negotiation:** `Accept: application/xml`.
-- **Data-driven run** with a CSV of invalid payloads
-  (`newman run collection.json -e environment.json -d data.csv`).
 
 ## Known issue
 
 When required fields are missing from the create payload, the API replies **`500` instead of `400`**.
 This is documented inside the collection as an explicit test rather than hidden, so the suite stays green
 while the bug is visible.
+
+**PUT on a non-existent ID:** the API replies **`405` instead of `404`**. The suite asserts the observed
+behavior and logs the response body, so the discrepancy stays visible.
 
 ## Note on the response-time assertion
 

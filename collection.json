@@ -520,6 +520,73 @@
       ]
     },
     {
+      "name": "Filters",
+      "description": "Query filters exposed by the booking search endpoint.",
+      "item": [
+        {
+          "name": "GET bookings by firstname",
+          "request": {
+            "method": "GET",
+            "description": "Filters bookings by firstname. A known name returns an array of booking IDs; an unknown name returns an empty array.",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Url}}/booking?firstname=Omar",
+              "host": [
+                "{{Url}}"
+              ],
+              "path": [
+                "booking"
+              ],
+              "query": [
+                {
+                  "key": "firstname",
+                  "value": "Omar"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response is an array of booking IDs\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an(\"array\");",
+                  "    jsonData.forEach(function (item) {",
+                  "        pm.expect(item).to.have.property(\"bookingid\");",
+                  "    });",
+                  "});",
+                  "pm.test(\"Unknown firstname returns an empty array\", function (done) {",
+                  "    pm.sendRequest({",
+                  "        url: pm.environment.get(\"Url\") + \"/booking?firstname=NoSuchName12345\",",
+                  "        method: \"GET\"",
+                  "    }, function (err, res) {",
+                  "        pm.expect(err).to.be.null;",
+                  "        pm.expect(res.code).to.eql(200);",
+                  "        pm.expect(res.json()).to.be.an(\"array\");",
+                  "        pm.expect(res.json().length).to.eql(0);",
+                  "        done();",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Negative cases",
       "description": "Error handling and edge cases.",
       "item": [
@@ -638,6 +705,137 @@
                   "        pm.expect(res.code).to.eql(200);",
                   "        done();",
                   "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT booking - invalid token (403)",
+          "request": {
+            "method": "PUT",
+            "description": "Negative case: updates an existing booking with a tampered token. The API rejects it with 403 and the booking is still there.",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "token=invalid-token-123",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstname\": \"Omar\",\n    \"lastname\": \"Peralta\",\n    \"totalprice\": 1500,\n    \"depositpaid\": true,\n    \"bookingdates\": {\n        \"checkin\": \"2026-11-01\",\n        \"checkout\": \"2026-11-05\"\n    },\n    \"additionalneeds\": \"Breakfast\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Url}}/booking/{{existing_booking_id}}",
+              "host": [
+                "{{Url}}"
+              ],
+              "path": [
+                "booking",
+                "{{existing_booking_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"Booking still exists after the rejected update\", function (done) {",
+                  "    pm.sendRequest({",
+                  "        url: pm.environment.get(\"Url\") + \"/booking/\" + pm.environment.get(\"existing_booking_id\"),",
+                  "        method: \"GET\"",
+                  "    }, function (err, res) {",
+                  "        pm.expect(err).to.be.null;",
+                  "        pm.expect(res.code).to.eql(200);",
+                  "        done();",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT booking - non-existent ID (405)",
+          "request": {
+            "method": "PUT",
+            "description": "Negative case: updates a booking ID that does not exist using a valid token. The API returns 405 (Method Not Allowed) instead of the expected 404; documented behavior.",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "token={{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstname\": \"Omar\",\n    \"lastname\": \"Peralta\",\n    \"totalprice\": 1500,\n    \"depositpaid\": true,\n    \"bookingdates\": {\n        \"checkin\": \"2026-11-01\",\n        \"checkout\": \"2026-11-05\"\n    },\n    \"additionalneeds\": \"Breakfast\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Url}}/booking/999999999",
+              "host": [
+                "{{Url}}"
+              ],
+              "path": [
+                "booking",
+                "999999999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"KNOWN BEHAVIOR: returns 405 instead of 404\", function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "pm.test(\"Log response body\", function () {",
+                  "    console.log(\"Response body:\", pm.response.text());",
                   "});"
                 ]
               }
