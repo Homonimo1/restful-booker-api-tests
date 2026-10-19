@@ -61,6 +61,59 @@
               }
             }
           ]
+        },
+        {
+          "name": "Token Auth - Bad Credentials",
+          "request": {
+            "method": "POST",
+            "description": "Negative case: authenticates with a wrong password. The API replies 200 (not 401) with a \"Bad credentials\" body and no token.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"admin\",\n    \"password\": \"wrong-password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Url}}/auth",
+              "host": [
+                "{{Url}}"
+              ],
+              "path": [
+                "auth"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 (this API does not use 401)\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response reports bad credentials\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"reason\", \"Bad credentials\");",
+                  "});",
+                  "pm.test(\"No token is returned\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.not.have.property(\"token\");",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -106,6 +159,7 @@
                   "pm.test(\"Array is not empty\", function () {",
                   "    var jsonData = pm.response.json();",
                   "    pm.expect(jsonData.length).to.be.above(0);",
+                  "    pm.environment.set(\"existing_booking_id\", jsonData[0].bookingid);",
                   "",
                   "});"
                 ]
@@ -374,6 +428,94 @@
               }
             }
           ]
+        },
+        {
+          "name": "Get Booking - Verify Update",
+          "request": {
+            "method": "GET",
+            "description": "Reads the booking again after PUT and PATCH to prove the changes were persisted on the server, not just echoed in the response.",
+            "header": [],
+            "url": {
+              "raw": "{{Url}}/booking/{{booking_id}}",
+              "host": [
+                "{{Url}}"
+              ],
+              "path": [
+                "booking",
+                "{{booking_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"PUT and PATCH changes persisted\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.lastname).to.eql(\"Suit Validada\");",
+                  "    pm.expect(jsonData.totalprice).to.eql(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Booking (auth)",
+          "request": {
+            "method": "DELETE",
+            "description": "Closes the CRUD lifecycle: deletes the created booking with the stored token and confirms it is gone (404).",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "token={{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Url}}/booking/{{booking_id}}",
+              "host": [
+                "{{Url}}"
+              ],
+              "path": [
+                "booking",
+                "{{booking_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Booking deleted (GET returns 404)\", function (done) {",
+                  "    pm.sendRequest({",
+                  "        url: pm.environment.get(\"Url\") + \"/booking/\" + pm.environment.get(\"booking_id\"),",
+                  "        method: \"GET\"",
+                  "    }, function (err, res) {",
+                  "        pm.expect(err).to.be.null;",
+                  "        pm.expect(res.code).to.eql(404);",
+                  "        done();",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -465,16 +607,16 @@
           "name": "Delete Booking - Forbidden (no auth)",
           "request": {
             "method": "DELETE",
-            "description": "Negative case: tries to delete the booking without authentication and verifies the request is rejected and the booking still exists.",
+            "description": "Negative case: tries to delete an existing booking of the sandbox without authentication. It is rejected (403) and the booking is still there.",
             "header": [],
             "url": {
-              "raw": "{{Url}}/booking/{{booking_id}}",
+              "raw": "{{Url}}/booking/{{existing_booking_id}}",
               "host": [
                 "{{Url}}"
               ],
               "path": [
                 "booking",
-                "{{booking_id}}"
+                "{{existing_booking_id}}"
               ]
             }
           },
@@ -489,7 +631,7 @@
                   "});",
                   "pm.test(\"Booking still exists (not deleted)\", function (done) {",
                   "    pm.sendRequest({",
-                  "        url: pm.environment.get(\"Url\") + \"/booking/\" + pm.environment.get(\"booking_id\"),",
+                  "        url: pm.environment.get(\"Url\") + \"/booking/\" + pm.environment.get(\"existing_booking_id\"),",
                   "        method: 'GET'",
                   "    }, function (err, res) {",
                   "        pm.expect(err).to.be.null;",
@@ -506,22 +648,17 @@
     },
     {
       "name": "Teardown",
-      "description": "Cleanup: deletes the booking created during the run so the sandbox is left clean.",
+      "description": "Post-run checks: leaves the sandbox clean and clears the runtime variables.",
       "item": [
         {
-          "name": "Delete Booking - Cleanup (auth)",
+          "name": "Cleanup Booking (safety net)",
           "request": {
-            "method": "DELETE",
-            "description": "Teardown: deletes the created booking with the stored token and verifies it no longer exists.",
+            "method": "GET",
+            "description": "Teardown: verifies the run left no booking behind. In the normal case the happy path already deleted it, so this GET returns 404; if a booking is still around (a previous step failed) it is removed here. Clears the runtime variables.",
             "header": [
               {
                 "key": "Accept",
                 "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "Cookie",
-                "value": "token={{token}}",
                 "type": "text"
               }
             ],
@@ -542,22 +679,25 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Cleanup: booking deleted\", function () {",
-                  "    pm.response.to.have.status(201);",
-                  "});",
-                  "",
-                  "pm.test(\"Cleanup: booking no longer exists\", function (done) {",
+                  "// Safety net: the happy path (Booking - Crud > Delete Booking) already removes the",
+                  "// booking, so normally this GET returns 404 and there is nothing left to do.",
+                  "pm.test(\"Cleanup: no booking left behind\", function (done) {",
+                  "    if (pm.response.code !== 200) {",
+                  "        pm.expect(pm.response.code).to.eql(404);",
+                  "        return done();",
+                  "    }",
                   "    pm.sendRequest({",
                   "        url: pm.environment.get(\"Url\") + \"/booking/\" + pm.environment.get(\"booking_id\"),",
-                  "        method: \"GET\"",
+                  "        method: \"DELETE\",",
+                  "        header: { Cookie: \"token=\" + pm.environment.get(\"token\") }",
                   "    }, function (err, res) {",
                   "        pm.expect(err).to.be.null;",
-                  "        pm.expect(res.code).to.eql(404);",
+                  "        pm.expect(res.code).to.eql(201);",
                   "        done();",
                   "    });",
                   "});",
                   "",
-                  "pm.test(\"Cleanup: stored id cleared\", function () {",
+                  "pm.test(\"Cleanup: runtime variables cleared\", function () {",
                   "    pm.environment.unset(\"booking_id\");",
                   "});"
                 ]
