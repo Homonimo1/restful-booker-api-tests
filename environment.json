@@ -22,13 +22,6 @@
       "enabled": true,
       "type": "default",
       "description": "Filled automatically by the Created Booking request."
-    },
-    {
-      "key": "existing_booking_id",
-      "value": "",
-      "enabled": true,
-      "type": "default",
-      "description": "Filled by GET all booking IDs; used by the no-auth delete case."
     }
   ],
   "_postman_variable_scope": "environment",
