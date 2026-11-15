@@ -24,11 +24,18 @@
       "description": "Filled automatically by the Created Booking request."
     },
     {
-      "key": "existing_booking_id",
+      "key": "run_firstname",
       "value": "",
       "enabled": true,
       "type": "default",
-      "description": "Filled by GET all booking IDs; used by the no-auth delete case."
+      "description": "Unique synthetic firstname generated for each collection run."
+    },
+    {
+      "key": "expected_booking",
+      "value": "",
+      "enabled": true,
+      "type": "default",
+      "description": "Runtime expected payload maintained through create, PUT and PATCH."
     }
   ],
   "_postman_variable_scope": "environment",
