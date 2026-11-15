@@ -721,6 +721,30 @@
           ]
         },
         {
+          "name": "GET deleted run booking - invalid ID",
+          "request": {
+            "method": "GET",
+            "description": "Given this run's booking has been deleted, When GET requests its ID, Then status 404 is returned.",
+            "header": [],
+            "url": {
+              "raw": "{{Url}}/booking/{{booking_id}}",
+              "host": ["{{Url}}"],
+              "path": ["booking", "{{booking_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Then deleted run booking is absent (404)\", function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "PUT booking - non-existent ID (405)",
           "request": {
             "method": "PUT",

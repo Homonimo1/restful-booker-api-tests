@@ -16,11 +16,11 @@ The collection checks auth token handling, booking schema and payload values, fu
 
 ## Live regression evidence
 
-The revised online collection was run on 2026-11-14: **20 requests, 35 assertions, 0 failures** (exit 0). It created, updated and deleted run-owned booking 4306; teardown GET observed 404. The read-only invalid-ID request returned 404. The run did not target booking ID 2. An earlier migration attempt ran 20 requests/37 assertions and failed four checks; it also sent unauthenticated requests to existing ID 2, so it is not treated as successful evidence. That earlier run observed 500 for a create request missing firstname and 405 for PUT on a deleted ID; these are observations, not proven contract defects.
+The integrated online collection was run on 2026-11-14: **21 requests, 36 assertions, 0 failures** (exit 0). It created, updated and deleted run-owned booking 3692; the post-delete GET and teardown GET both observed 404. The read-only constant invalid-ID request also returned 404. The pre-integration candidate separately passed 20 requests/35 assertions; the earlier remote README recorded a 2026-10-21 run with 20 requests/37 assertions and 0 failures. An earlier migration attempt ran 20 requests/37 assertions and failed four checks; it sent unauthenticated requests to existing ID 2, so it is not treated as successful evidence. That earlier run observed 500 for a create request missing firstname and 405 for PUT on a deleted ID; these are observations, not proven contract defects.
 
 ## Cleanup limits
 
-Teardown runs only if Newman reaches it. An interrupted run or failed earlier request may leave the run-owned booking behind. The fallback teardown DELETE is not followed by a confirming GET. No offline harness or offline verification is included. All booking-specific requests, including unauthorized checks, use the run-created booking ID; the deleted-ID characterization uses that same ID after its authenticated deletion.
+Teardown runs only if Newman reaches it. An interrupted run or failed earlier request may leave the run-owned booking behind. The fallback teardown DELETE is not followed by a confirming GET. No offline harness or offline verification is included. All owned-booking requests, including unauthorized checks and the post-delete GET, use the run-created booking ID; a separate read-only invalid-ID request checks the constant ID 10000.
 
 ## Target and environment
 
